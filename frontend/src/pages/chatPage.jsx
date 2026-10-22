@@ -53,12 +53,21 @@ export default function ChatPage({ crawlMeta, onBack }) {
         ]);
       }
     } catch (err) {
-      console.error(err);
-      setError(
+      const status = err?.response?.status;
+      const message =
         err?.response?.data?.error ||
-          err?.response?.data?.message ||
-          err.message ||
-          "Error contacting backend. Check console."
+        err?.response?.data?.message ||
+        err.message ||
+        "Unable to contact the backend. Please try again.";
+
+      if (status !== 429 && status !== 503) {
+        console.error("RAG request failed:", err);
+      }
+
+      setError(
+        status === 429 || status === 503
+          ? `${message} Your website content is still indexed; you can retry safely.`
+          : message
       );
     } finally {
       setLoading(false);

@@ -1,11 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getEmbedding } from "../processing/embedder.js";
-import { queryVectors } from "../db/queryVectors.js";
+import { queryVectors } from "../db/queryVector.js";
 
 const sleep = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-async function generateContentWithRetry(model, prompt, attempts = 3) {
+async function generateContentWithRetry(model, prompt, attempts = 5) {
   let lastError;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -13,12 +13,12 @@ async function generateContentWithRetry(model, prompt, attempts = 3) {
       return await model.generateContent(prompt);
     } catch (error) {
       lastError = error;
-      const status = error.status || error.response?.status;
+      const status = Number(error.status || error.response?.status);
       const retryable = status === 429 || status === 503;
 
       if (!retryable || attempt === attempts - 1) break;
 
-      const delay = 1000 * 2 ** attempt;
+      const delay = Math.min(1000 * 2 ** attempt, 8000) + Math.round(Math.random() * 250);
       console.warn(
         `Gemini returned ${status}; retrying in ${delay}ms (${attempt + 1}/${attempts - 1})`
       );
